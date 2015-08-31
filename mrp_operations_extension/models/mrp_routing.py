@@ -56,6 +56,8 @@ class MrpRoutingWorkcenter(models.Model):
     previous_operations_finished = fields.Boolean(
         string='Previous operations finished',
         default="get_routing_previous_operations")
+    picking_type_id = fields.Many2one('stock.picking.type', 'Picking Type',
+                                      domain=[('code', '=', 'outgoing')])
 
     @api.constrains('op_wc_lines')
     def _check_default_op_wc_lines(self):
@@ -118,7 +120,7 @@ class MrpOperationWorkcenter(models.Model):
                              help="Time in hours for the cleaning.")
     op_number = fields.Integer('# operators', default='0')
     op_avg_cost = fields.Float(
-        string='Operator avg. cost',
+        string='Operator avg. hour cost',
         digits=dp.get_precision('Product Price'))
     default = fields.Boolean('Default')
 
