@@ -25,16 +25,16 @@ class MrpProduction(models.Model):
     @api.depends('analytic_line_ids', 'analytic_line_ids.estim_std_cost',
                  'product_qty')
     def get_unit_std_cost(self):
-        self.std_cost = sum([line.estim_std_cost for line in
-                             self.analytic_line_ids])
+        self.std_cost = -(sum([line.estim_std_cost for line in
+                               self.analytic_line_ids]))
         self.unit_std_cost = self.std_cost / self.product_qty
 
     @api.one
     @api.depends('analytic_line_ids', 'analytic_line_ids.estim_avg_cost',
                  'product_qty')
     def get_unit_avg_cost(self):
-        self.avg_cost = sum([line.estim_avg_cost for line in
-                             self.analytic_line_ids])
+        self.avg_cost = -(sum([line.estim_avg_cost for line in
+                               self.analytic_line_ids]))
         self.unit_avg_cost = self.avg_cost / self.product_qty
 
     @api.one
@@ -86,7 +86,6 @@ class MrpProduction(models.Model):
             cond = [('mrp_production_id', '=', production.id)]
             analytic_line_obj.search(cond).unlink()
             if production.project_id.automatic_creation:
-                production.project_id.unlink()
                 analytic_lines = analytic_line_obj.search(
                     [('account_id', '=', production.analytic_account_id.id)])
                 if not analytic_lines:
@@ -97,27 +96,6 @@ class MrpProduction(models.Model):
     def action_confirm(self):
         res = super(MrpProduction, self).action_confirm()
         self.calculate_production_estimated_cost()
-        return res
-
-    @api.multi
-    def action_compute(self, properties=None):
-        project_obj = self.env['project.project']
-        res = super(MrpProduction, self).action_compute(properties=properties)
-        for record in self:
-            if not record.project_id:
-                project = project_obj.search([('name', '=', record.name)],
-                                             limit=1)
-                if not project:
-                    project_vals = {
-                        'name': record.name,
-                        'use_tasks': True,
-                        'use_timesheets': True,
-                        'use_issues': True,
-                        'automatic_creation': True,
-                    }
-                    project = project_obj.create(project_vals)
-                record.project_id = project.id
-                record.analytic_account_id = project.analytic_account_id.id
         return res
 
     @api.multi

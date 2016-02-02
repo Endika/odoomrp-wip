@@ -78,7 +78,7 @@ class MrpProduction(models.Model):
             routing_id = False
             if not bom_id:
                 bom_id = bom_obj._bom_find(
-                    product_id=product.product_tmpl_id.id, properties=[])
+                    product_tmpl_id=product.product_tmpl_id.id, properties=[])
             if bom_id:
                 bom_point = bom_obj.browse(bom_id)
                 routing_id = bom_point.routing_id.id or False
@@ -150,11 +150,11 @@ class MrpProduction(models.Model):
         if properties is None:
             properties = []
         results = []
-        bom_obj = self.env['mrp.bom']
         uom_obj = self.env['product.uom']
         prod_line_obj = self.env['mrp.production.product.line']
         workcenter_line_obj = self.env['mrp.production.workcenter.line']
         for production in self:
+            bom_obj = self.env['mrp.bom'].with_context(production=production)
             #  unlink product_lines
             production.product_lines.unlink()
             #  unlink workcenter_lines
@@ -180,22 +180,19 @@ class MrpProduction(models.Model):
                 raise exceptions.Warning(
                     _('Error! Cannot find a bill of material for this'
                       ' product.'))
-
             # get components and workcenter_lines from BoM structure
             factor = uom_obj._compute_qty(production.product_uom.id,
                                           production.product_qty,
                                           bom_point.product_uom.id)
             # product_lines, workcenter_lines
-            results, results2 = bom_obj._bom_explode(
-                bom_point, production.product_id,
-                factor / bom_point.product_qty, properties,
-                routing_id=production.routing_id.id, production=production)
-
+            results, results2 = bom_point.with_context(
+                production=production)._bom_explode(
+                    production.product_id, factor / bom_point.product_qty,
+                    properties, routing_id=production.routing_id.id)
             #  reset product_lines in production order
             for line in results:
                 line['production_id'] = production.id
                 prod_line_obj.create(line)
-
             #  reset workcenter_lines in production order
             for line in results2:
                 line['production_id'] = production.id
@@ -247,6 +244,12 @@ class MrpProduction(models.Model):
                      'attribute_value_ids': [(6, 0, att_values_ids)]})
             line.product_id = product
         return super(MrpProduction, self)._make_production_consume_line(line)
+
+    @api.model
+    def _prepare_lines(self, production, properties=None):
+        obj = self.with_context(production=production)
+        return super(MrpProduction, obj)._prepare_lines(
+            production, properties=properties)
 
 
 class MrpProductionProductLineAttribute(models.Model):

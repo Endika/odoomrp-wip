@@ -40,7 +40,7 @@ class MrpProductionWorkcenterLine(models.Model):
         task_obj = self.env['project.task']
         if self.workcenter_id.costs_hour > 0.0:
             hour_uom = self.env.ref('product.product_uom_hour', False)
-            operation_line = self.operation_time_lines[-1]
+            operation_line = self.operation_time_lines[-1:]
             production = self.production_id
             workcenter = self.workcenter_id
             product = workcenter.product_id
@@ -56,7 +56,7 @@ class MrpProductionWorkcenterLine(models.Model):
                 general_account=general_acc, workorder=self,
                 qty=operation_line.uptime, amount=price)
             task = task_obj.search([('mrp_production_id', '=', production.id),
-                                    ('wk_order', '=', False)])
+                                    ('workorder', '=', False)])
             analytic_vals['task_id'] = task and task[0].id or False
             analytic_vals['product_uom_id'] = hour_uom.id
             analytic_line = analytic_line_obj.create(analytic_vals)
@@ -97,7 +97,7 @@ class MrpProductionWorkcenterLine(models.Model):
                 general_account=general_acc, workorder=self,
                 qty=qty, amount=price)
             task = task_obj.search([('mrp_production_id', '=', production.id),
-                                    ('wk_order', '=', False)])
+                                    ('workorder', '=', False)])
             analytic_vals['task_id'] = task and task[0].id or False
             analytic_vals['product_uom_id'] = hour_uom.id
             analytic_line_obj.create(analytic_vals)

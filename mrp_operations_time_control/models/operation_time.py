@@ -33,7 +33,8 @@ class MrpProductionWorkcenterLine(models.Model):
             'user': self.env.uid})
 
     def _write_end_date_operation_line(self):
-        self.operation_time_lines[-1].end_date = fields.Datetime.now()
+        if self.operation_time_lines:
+            self.operation_time_lines[-1].end_date = fields.Datetime.now()
 
     def action_start_working(self):
         result = super(MrpProductionWorkcenterLine,
@@ -68,7 +69,7 @@ class OperationTimeLine(models.Model):
     start_date = fields.Datetime(string='Start Date')
     end_date = fields.Datetime(string='End Date')
     operation_time = fields.Many2one('mrp.production.workcenter.line')
-    uptime = fields.Float(string='Uptime', compute='operation_uptime',
+    uptime = fields.Float(string='Machine up time', compute='operation_uptime',
                           store=True, digits=(12, 6))
     production = fields.Many2one('mrp.production',
                                  related='operation_time.production_id',
